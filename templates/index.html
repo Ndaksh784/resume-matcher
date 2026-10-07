@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resume Matcher: ATS score, job match and candidate ranking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>
+    <span>Resume<b>Matcher</b></span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="tab-matcher" role="tab">My resume</button>
+    <button class="tab-btn" data-tab="tab-recruiter" role="tab">Rank candidates</button>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ TAB 1 ============ -->
+  <section id="tab-matcher" class="tab-panel active">
+    <div class="hero">
+      <h1>See your resume the way an ATS does.</h1>
+      <p>Get an ATS score, find out exactly what to fix, and check how well you fit a job before you apply.</p>
+    </div>
+
+    <div class="cols">
+      <!-- Resume column -->
+      <div class="col">
+        <div class="panel">
+          <h2>1. Upload your resume</h2>
+          <input type="file" id="resume-input" accept=".pdf,.docx,.txt" hidden />
+          <label for="resume-input" class="drop" id="dropzone">
+            <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+            <span class="drop-title">Drop your resume here or <u>browse</u></span>
+            <span class="muted small">PDF, DOCX or TXT, up to 5 MB</span>
+          </label>
+          <div id="upload-status" class="status"></div>
+        </div>
+
+        <div id="parsed-results" hidden>
+          <div class="panel score-panel">
+            <div class="score-top">
+              <div id="ats-ring"></div>
+              <div class="score-copy">
+                <h3>ATS score <span id="ats-grade" class="grade"></span></h3>
+                <p id="ats-summary" class="muted"></p>
+                <a id="download-pdf-btn" class="btn ghost" href="#">Download PDF report</a>
+              </div>
+            </div>
+            <div id="ats-breakdown" class="bars"></div>
+          </div>
+
+          <div class="panel">
+            <h3>What to fix first</h3>
+            <ul id="quality-feedback" class="recs"></ul>
+          </div>
+
+          <div class="panel" id="coach-panel" hidden>
+            <h3>Bullet coach</h3>
+            <p class="muted small" id="coach-sub"></p>
+            <div id="coach-list"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Skills we found</h3>
+            <div id="resume-skills"></div>
+            <div id="unproven" class="callout" hidden></div>
+          </div>
+
+          <div class="panel">
+            <h3>Parsed details</h3>
+            <dl id="field-list" class="facts"></dl>
+          </div>
+        </div>
+      </div>
+
+      <!-- JD column -->
+      <div class="col">
+        <div class="panel">
+          <h2>2. Paste the job description</h2>
+          <textarea id="job-description" placeholder="Paste the full job posting here. Words like “must have” and “nice to have” change how much each skill counts."></textarea>
+          <button id="match-btn" class="btn primary" disabled>Check my fit</button>
+          <p class="muted small" id="match-hint">Upload a resume first to enable matching.</p>
+        </div>
+
+        <div id="match-results" hidden>
+          <div class="panel score-panel">
+            <div class="score-top">
+              <div id="match-ring"></div>
+              <div class="score-copy">
+                <h3>Job fit</h3>
+                <p id="match-explanation" class="muted"></p>
+              </div>
+            </div>
+            <div id="match-breakdown" class="bars"></div>
+          </div>
+
+          <div class="panel" id="whatif" hidden></div>
+
+          <div class="panel">
+            <h3>Skills you match</h3>
+            <div id="matched-skills"></div>
+            <h3 class="gap-title">Skills you're missing</h3>
+            <div id="missing-skills"></div>
+            <div id="bonus-wrap" hidden>
+              <h3 class="gap-title">Extra skills you bring</h3>
+              <div id="bonus-skills"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Learning plan</h3>
+            <p class="muted small">Ordered by how much the job cares about each skill.</p>
+            <ol id="resource-links" class="plan"></ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 2 ============ -->
+  <section id="tab-recruiter" class="tab-panel">
+    <div class="hero">
+      <h1>Rank a stack of resumes in one go.</h1>
+      <p>Upload candidates, paste the role, and get a ranked shortlist with skill gaps and interview questions.</p>
+    </div>
+
+    <div class="cols">
+      <div class="col">
+        <div class="panel">
+          <h2>1. Add candidates</h2>
+          <input type="file" id="batch-resume-input" accept=".pdf,.docx,.txt" multiple hidden />
+          <label for="batch-resume-input" class="drop" id="batch-dropzone">
+            <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="drop-title" id="batch-file-label">Drop resumes here or <u>browse</u></span>
+            <span class="muted small">Up to 25 files at once</span>
+          </label>
+          <button id="batch-upload-btn" class="btn dark">Upload and parse</button>
+          <div id="batch-status" class="status"></div>
+          <div id="pool" class="pool" hidden>
+            <div class="pool-head"><b id="pool-count">0 candidates</b><button id="pool-clear" class="link">Clear all</button></div>
+            <ul id="pool-list"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel">
+          <h2>2. Describe the role</h2>
+          <textarea id="recruiter-jd" placeholder="Paste the job description. Required skills count more than nice-to-haves."></textarea>
+          <button id="rank-btn" class="btn primary">Rank candidates</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ranking-results" hidden>
+      <div class="toolbar">
+        <h2>Shortlist <span id="candidate-count-tag" class="pill">0</span></h2>
+        <div class="toolbar-actions">
+          <label class="switch"><input type="checkbox" id="blind-toggle" /><span>Blind screening (hide names)</span></label>
+          <button id="csv-btn" class="btn ghost">Export CSV</button>
+        </div>
+      </div>
+      <p class="muted small">Overall = 75% job match + 25% resume quality. Hiring should still be a human decision.</p>
+      <div id="rank-cards" class="rank-cards"></div>
+
+      <div class="cols">
+        <div class="col"><div class="panel">
+          <h3>Skill matrix</h3>
+          <div class="table-wrap"><table class="matrix" id="matrix"></table></div>
+        </div></div>
+        <div class="col"><div class="panel">
+          <h3>Talent pool coverage</h3>
+          <p class="muted small">Share of candidates who have each required skill. Short bars are your hiring bottlenecks.</p>
+          <div id="pool-coverage" class="bars"></div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
